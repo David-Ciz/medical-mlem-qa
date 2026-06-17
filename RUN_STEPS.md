@@ -15,8 +15,6 @@ The code auto-selects the best available device in this order:
 cuda -> mps -> cpu
 ```
 
-On this Mac, run normally from your shell so PyTorch can see Apple MPS/GPU.
-
 ## Current Pipeline
 
 Download and preprocess Kvasir-SEG:
@@ -153,9 +151,7 @@ For a stronger paper setup, the next model candidates are:
 - PraNet-style model
 - Polyp-PVT-style model
 
-Then rerun evaluation and complementarity. The goal is to show that per-case model selection or quality-aware ensembling improves over the best single model.
-
-The current QA router is a prototype. It trains on the validation split, which was also used for checkpoint selection. For a paper, add an independent QA calibration split or use cross-validation.
+The current QA router is a prototype. It trains on the validation split, which was also used for checkpoint selection. For a paper, we need to add an independent QA calibration split or use cross-validation.
 
 ## Useful Files
 
