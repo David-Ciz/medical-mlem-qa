@@ -1,0 +1,161 @@
+stages:
+  preprocess:
+    cmd: python -m mlem_qa_medseg.preprocess --params params.yaml
+    deps:
+      - src/mlem_qa_medseg/preprocess.py
+      - params.yaml
+    outs:
+      - data/raw/kvasir-seg
+      - data/processed/kvasir-seg
+
+  train_unet:
+    cmd: python -m mlem_qa_medseg.train --params params.yaml --model unet
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - params.yaml
+    outs:
+      - models/unet
+
+  train_deeplabv3:
+    cmd: python -m mlem_qa_medseg.train --params params.yaml --model deeplabv3
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - params.yaml
+    outs:
+      - models/deeplabv3
+
+  train_fcn_resnet50:
+    cmd: python -m mlem_qa_medseg.train --params params.yaml --model fcn_resnet50
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - params.yaml
+    outs:
+      - models/fcn_resnet50
+
+  train_lraspp_mobilenet_v3_large:
+    cmd: python -m mlem_qa_medseg.train --params params.yaml --model lraspp_mobilenet_v3_large
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - params.yaml
+    outs:
+      - models/lraspp_mobilenet_v3_large
+
+  evaluate:
+    cmd: >-
+      python -m mlem_qa_medseg.evaluate --params params.yaml --model unet
+      && python -m mlem_qa_medseg.evaluate --params params.yaml --model deeplabv3
+      && python -m mlem_qa_medseg.evaluate --params params.yaml --model fcn_resnet50
+      && python -m mlem_qa_medseg.evaluate --params params.yaml --model lraspp_mobilenet_v3_large
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - models/unet
+      - models/deeplabv3
+      - models/fcn_resnet50
+      - models/lraspp_mobilenet_v3_large
+      - params.yaml
+    outs:
+      - reports/unet
+      - reports/deeplabv3
+      - reports/fcn_resnet50
+      - reports/lraspp_mobilenet_v3_large
+
+  export_predictions:
+    cmd: >-
+      python -m mlem_qa_medseg.export_predictions --params params.yaml --model unet --split test
+      && python -m mlem_qa_medseg.export_predictions --params params.yaml --model deeplabv3 --split test
+      && python -m mlem_qa_medseg.export_predictions --params params.yaml --model fcn_resnet50 --split test
+      && python -m mlem_qa_medseg.export_predictions --params params.yaml --model lraspp_mobilenet_v3_large --split test
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - models/unet
+      - models/deeplabv3
+      - models/fcn_resnet50
+      - models/lraspp_mobilenet_v3_large
+      - params.yaml
+    outs:
+      - predictions/unet/test
+      - predictions/deeplabv3/test
+      - predictions/fcn_resnet50/test
+      - predictions/lraspp_mobilenet_v3_large/test
+
+  complementarity:
+    cmd: >-
+      python -m mlem_qa_medseg.complementarity --model-a unet --model-b deeplabv3 --split test
+      && python -m mlem_qa_medseg.complementarity --model-a deeplabv3 --model-b fcn_resnet50 --split test
+      && python -m mlem_qa_medseg.complementarity --model-a unet --model-b fcn_resnet50 --split test
+      && python -m mlem_qa_medseg.complementarity --model-a deeplabv3 --model-b lraspp_mobilenet_v3_large --split test
+      && python -m mlem_qa_medseg.complementarity --model-a fcn_resnet50 --model-b lraspp_mobilenet_v3_large --split test
+    deps:
+      - src/mlem_qa_medseg
+      - predictions/unet/test
+      - predictions/deeplabv3/test
+      - predictions/fcn_resnet50/test
+      - predictions/lraspp_mobilenet_v3_large/test
+    outs:
+      - reports/complementarity
+
+  ensemble:
+    cmd: >-
+      python -m mlem_qa_medseg.ensemble
+      --models deeplabv3 fcn_resnet50
+      --split test
+      --threshold 0.5
+      && python -m mlem_qa_medseg.ensemble
+      --models deeplabv3 fcn_resnet50 lraspp_mobilenet_v3_large
+      --split test
+      --threshold 0.5
+      && python -m mlem_qa_medseg.ensemble
+      --models unet deeplabv3 fcn_resnet50
+      --split test
+      --threshold 0.5
+    deps:
+      - src/mlem_qa_medseg
+      - predictions/unet/test
+      - predictions/deeplabv3/test
+      - predictions/fcn_resnet50/test
+      - predictions/lraspp_mobilenet_v3_large/test
+    outs:
+      - reports/ensemble
+
+  export_qa_calibration_predictions:
+    cmd: >-
+      python -m mlem_qa_medseg.export_predictions --params params.yaml --model deeplabv3 --split val
+      && python -m mlem_qa_medseg.export_predictions --params params.yaml --model fcn_resnet50 --split val
+      && python -m mlem_qa_medseg.export_predictions --params params.yaml --model lraspp_mobilenet_v3_large --split val
+    deps:
+      - src/mlem_qa_medseg
+      - data/processed/kvasir-seg
+      - models/deeplabv3
+      - models/fcn_resnet50
+      - models/lraspp_mobilenet_v3_large
+      - params.yaml
+    outs:
+      - predictions/deeplabv3/val
+      - predictions/fcn_resnet50/val
+      - predictions/lraspp_mobilenet_v3_large/val
+
+  qa_router:
+    cmd: >-
+      python -m mlem_qa_medseg.qa_router
+      --models deeplabv3 fcn_resnet50 lraspp_mobilenet_v3_large
+      --train-split val
+      --test-split test
+      --seed 42
+      --margin 0.03
+      --threshold 0.80
+    deps:
+      - src/mlem_qa_medseg
+      - predictions/deeplabv3/val
+      - predictions/fcn_resnet50/val
+      - predictions/lraspp_mobilenet_v3_large/val
+      - predictions/deeplabv3/test
+      - predictions/fcn_resnet50/test
+      - predictions/lraspp_mobilenet_v3_large/test
+    outs:
+      - reports/qa_router

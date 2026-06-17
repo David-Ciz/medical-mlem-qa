@@ -1,0 +1,36 @@
+seed: 42
+
+data:
+  dataset: kvasir-seg
+  url: "https://datasets.simula.no/downloads/kvasir-seg.zip"
+  allow_insecure_ssl: true
+  raw_dir: data/raw/kvasir-seg
+  processed_dir: data/processed/kvasir-seg
+  image_size: 352
+  val_fraction: 0.15
+  test_fraction: 0.15
+
+train:
+  batch_size: 4
+  epochs: 10
+  learning_rate: 0.0003
+  weight_decay: 0.00001
+  num_workers: 0
+  amp: true
+  threshold: 0.5
+
+models:
+  unet:
+    output_dir: models/unet
+  deeplabv3:
+    output_dir: models/deeplabv3
+  deeplabv3_resnet101:
+    output_dir: models/deeplabv3_resnet101
+  deeplabv3_mobilenet_v3_large:
+    output_dir: models/deeplabv3_mobilenet_v3_large
+  fcn_resnet50:
+    output_dir: models/fcn_resnet50
+  fcn_resnet101:
+    output_dir: models/fcn_resnet101
+  lraspp_mobilenet_v3_large:
+    output_dir: models/lraspp_mobilenet_v3_large

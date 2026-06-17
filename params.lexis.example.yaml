@@ -1,0 +1,28 @@
+seed: 42
+
+data:
+  dataset: kvasir-seg
+  url: ""
+  allow_insecure_ssl: false
+  raw_dir: /lexis/input/kvasir-seg
+  processed_dir: /lexis/work/data/processed/kvasir-seg
+  image_size: 352
+  val_fraction: 0.15
+  test_fraction: 0.15
+
+train:
+  batch_size: 4
+  epochs: 10
+  learning_rate: 0.0003
+  weight_decay: 0.00001
+  num_workers: 0
+  amp: true
+  threshold: 0.5
+
+models:
+  deeplabv3:
+    output_dir: /lexis/work/models/deeplabv3
+  fcn_resnet50:
+    output_dir: /lexis/work/models/fcn_resnet50
+  lraspp_mobilenet_v3_large:
+    output_dir: /lexis/work/models/lraspp_mobilenet_v3_large
